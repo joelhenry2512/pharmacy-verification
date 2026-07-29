@@ -8,15 +8,13 @@ set -euo pipefail
 REPO_NAME="pharmacy-verification"       # rename once the product name is locked
 VISIBILITY="private"                    # keep private — this repo touches PHI design
 
-# Real handles, for reference: ananth-123 (Ananth), vibhas-krishnapuram (Vibhas).
-# Left blank below until each is invited as a collaborator — GitHub rejects
+# Left blank until each is invited as a collaborator — GitHub rejects
 # --assignee for a non-collaborator, which would abort this script partway
-# through issue creation. Once invited, set these and re-run (mkissue is
-# idempotent-ish for labels/milestones; issues would need manual assignment
-# or a second pass).
+# through issue creation. Fill in once invited (see git history / GitHub
+# for anyone already assigned via a manual pass after accepting).
 JOEL="joelhenry2512"
-ANANTH=""
-VIBHAS=""
+ANANTH="ananth-123"                     # collaborator — accepted, issues assigned
+VIBHAS="vibhas-krishnapuram"            # not yet a collaborator
 MATT=""                                 # add as member even though he won't push
 ANJALI=""
 # ───────────────────────────────────────────────────────────────────
