@@ -1,0 +1,4 @@
+# The schema is a shared contract — changes need the integration lead.
+/packages/schema/   @joelhenry2512
+/packages/db/       @joelhenry2512
+/.github/           @joelhenry2512

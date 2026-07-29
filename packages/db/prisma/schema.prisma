@@ -1,0 +1,94 @@
+// Mirrors packages/schema. Rich nested field envelopes are stored as Json;
+// anything we filter, sort, or report on is promoted to a real column.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RecordStatus {
+  intake
+  extracting
+  resolving
+  ready_for_verification
+  verified
+  rejected
+  written_back
+  error
+}
+
+enum Lane {
+  fast
+  review
+}
+
+enum Tier {
+  green
+  amber
+  red
+}
+
+model VerificationRecord {
+  id            String       @id @default(uuid())
+  schemaVersion String
+  status        RecordStatus
+  lane          Lane
+  overallTier   Tier
+
+  /// IntakeSource — imageKey is an object-store key, never a public URL.
+  source        Json
+  /// Field envelopes: value + provenance + confidence + bbox + tier.
+  patient       Json
+  drug          Json
+  prescriber    Json
+  dateWritten   Json
+  preChecks     Json         @default("[]")
+
+  /// Set once matched to a Liberty profile. Indexed for patient lookup.
+  libertyPatientId String?
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  corrections   CorrectionEvent[]
+  events        VerificationEvent[]
+
+  @@index([status, lane])
+  @@index([libertyPatientId])
+}
+
+/// APPEND-ONLY. Never UPDATE or DELETE. Compliance trail + calibration signal.
+model CorrectionEvent {
+  id            String   @id @default(uuid())
+  recordId      String
+  record        VerificationRecord @relation(fields: [recordId], references: [id])
+  fieldPath     String
+  previousValue Json?
+  newValue      Json?
+  previousTier  Tier
+  correctedBy   String
+  correctedAt   DateTime @default(now())
+  reason        String?
+
+  @@index([recordId])
+  @@index([fieldPath])
+}
+
+/// APPEND-ONLY. secondsOnScreen is our headline pilot metric.
+model VerificationEvent {
+  id                   String   @id @default(uuid())
+  recordId             String
+  record               VerificationRecord @relation(fields: [recordId], references: [id])
+  action               String
+  pharmacistId         String
+  laneAtDecision       Lane
+  overallTierAtDecision Tier
+  secondsOnScreen      Float
+  occurredAt           DateTime @default(now())
+
+  @@index([recordId])
+  @@index([occurredAt])
+}

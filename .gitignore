@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.turbo/
+.claude/settings.local.json
+
+# never commit — see .claude/rules/phi-safety.md
+.env
+fixtures/real/
+data/local/
+
+.DS_Store
+*.log

@@ -1,0 +1,32 @@
+---
+description: Core project context — what we're building and the non-negotiables
+alwaysApply: true
+---
+
+# What this is
+
+An AI assistant for **independent pharmacies** that automates prescription
+data entry and prepares a drafted record for **pharmacist verification**.
+It sits on top of an existing pharmacy management system (PMS) — it is not
+a PMS and never replaces one. Pilot PMS: **Liberty (RxQ)**, via its
+PIN-authenticated API.
+
+Pipeline: intake → extraction → match/validate → verification draft → write-back.
+
+# Non-negotiables
+
+- **Pharmacist-in-the-loop, always.** Never generate code that dispenses,
+  finalizes, or writes back a prescription without an explicit pharmacist
+  action. There is no "auto-approve" path, even for all-green records.
+- **The model never assigns clinical tiers.** It reports what it read and
+  how confident it was. Tiers are computed by our scorer from multiple
+  signals. Don't shortcut this.
+- **Liberty's own clinical/DUR engine stays authoritative** at final
+  verification. Our pre-checks surface concerns earlier; they don't replace it.
+- **Everything is auditable.** Any change to a prescription field emits a
+  CorrectionEvent. Audit tables are append-only — never UPDATE or DELETE.
+
+# Stack
+
+TypeScript everywhere. Next.js (App Router) + Prisma + PostgreSQL + Zod.
+pnpm workspaces monorepo. Prefer boring, well-tested choices over clever ones.

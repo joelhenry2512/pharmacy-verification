@@ -1,0 +1,14 @@
+{
+  "name": "@rx/liberty",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Liberty (RxQ) API connector",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test"
+  },
+  "dependencies": { "@rx/schema": "workspace:*", "zod": "^4.0.0" }
+}
