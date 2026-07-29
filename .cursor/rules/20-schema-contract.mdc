@@ -1,6 +1,6 @@
 ---
 description: How to use and change the canonical prescription schema
-globs: ["packages/**/*.ts", "apps/**/*.ts", "apps/**/*.tsx"]
+globs: packages/**/*.ts,apps/**/*.ts,apps/**/*.tsx
 alwaysApply: false
 ---
 

@@ -13,11 +13,14 @@ PIN-authenticated API.
 
 Pipeline: intake → extraction → match/validate → verification draft → write-back.
 
+Full strategy, market position, and phase plan: `docs/game-plan.pdf`.
+
 # Non-negotiables
 
 - **Pharmacist-in-the-loop, always.** Never generate code that dispenses,
   finalizes, or writes back a prescription without an explicit pharmacist
   action. There is no "auto-approve" path, even for all-green records.
+  All-green earns a *fast lane* — one tap to accept — never zero-touch.
 - **The model never assigns clinical tiers.** It reports what it read and
   how confident it was. Tiers are computed by our scorer from multiple
   signals. Don't shortcut this.
@@ -25,6 +28,29 @@ Pipeline: intake → extraction → match/validate → verification draft → wr
   verification. Our pre-checks surface concerns earlier; they don't replace it.
 - **Everything is auditable.** Any change to a prescription field emits a
   CorrectionEvent. Audit tables are append-only — never UPDATE or DELETE.
+
+# v1 scope decisions (don't relitigate these in code)
+
+- **API-first, never screen-scraping.** Liberty exposes a documented,
+  PIN-authenticated API. Vision-driving-the-PMS is a last-resort fallback,
+  not an architecture.
+- **NCPDP SCRIPT is the data model.** We ride the e-prescribing rails rather
+  than inventing a parallel vocabulary. eScripts are already structured — the
+  easy 60–70% of volume.
+- **No standalone drug-interaction engine in v1.** NLM discontinued its free
+  interaction API in Jan 2024. Building or licensing one (Medi-Span/FDB, or
+  NLP over openFDA labels) is a deliberate Phase-4 build-vs-buy decision.
+  Until then, Liberty's DUR is the authoritative interaction check.
+- **RxNorm/openFDA live endpoints for the pilot.** Mirror to Postgres later,
+  only if latency or rate limits actually bite.
+- **Polling first.** TanStack Query against a Postgres-backed queue.
+  Websockets only when staleness is a real, observed complaint.
+
+# The metric that matters
+
+Median pharmacist **seconds-per-script at verification**, measured against
+Anjali's Week-1 baseline. Time-to-verify is the headline; errors caught
+before the bench is the trust story. Optimize accordingly.
 
 # Stack
 

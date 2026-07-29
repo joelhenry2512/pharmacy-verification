@@ -1,0 +1,66 @@
+---
+description: Extraction pipeline — intake, VLM, RxNorm/NDC grounding (Ananth's lane)
+globs: packages/extraction/**/*.ts
+alwaysApply: false
+---
+
+# Extraction pipeline
+
+Stages 1–2: raw prescription in, validated structured data out. Everything
+here produces `VlmPrescriptionExtraction`, which the scorer then enriches
+into a `VerificationRecord`. Never emit a tier from this package.
+
+## Intake routing
+
+Three input types, three paths:
+
+- **eScript (NCPDP SCRIPT XML)** — parse directly. Structured already, so
+  this is the near-zero-error path and 60–70% of volume. `provenance: "escript"`.
+- **Fax image** — deskew, denoise, contrast-normalize, split multi-page,
+  then VLM.
+- **Handwritten** — same preprocessing, but route to a higher-scrutiny path.
+  Handwriting should bias toward amber/red, not toward confident reads.
+
+## VLM extraction
+
+- **One pass returns value + confidence + normalized bounding box per field.**
+  The bbox powers the UI's click-to-source overlay, so it isn't optional —
+  a field without a bbox costs the pharmacist the fastest way to check it.
+- **Generate the JSON Schema from `VlmPrescriptionExtraction`.** Do not
+  hand-write the model's output contract. If the schema and the contract
+  drift, extraction breaks quietly.
+- Prefer accuracy over throughput. This is hundreds of documents a day, not
+  millions — there is no reason to trade correctness for latency.
+- The model's self-reported confidence is **one input among several**, never
+  a tier on its own.
+
+## Drug resolution (this is the moat)
+
+Ladder, in order — record which rung resolved it:
+
+1. `findRxcuiByString` — exact / normalized lookup.
+2. `getApproximateMatch` — scored fuzzy fallback.
+3. Unresolved — surface it, never guess.
+
+Then RxCUI → NDC via RxNorm/openFDA, intersected with the pharmacy's actual
+stock from Liberty. Flagging out-of-stock early is a real win for an
+independent, so don't drop `stockedNdc` on the floor.
+
+- **Always record `scoreMargin`** (top candidate minus runner-up). A narrow
+  margin between two real drugs is the dangerous case — "5mg" vs "5ng"
+  resolves against reality, not vibes.
+- **The fallback path runs on every input type, including eScripts.** Real
+  eScript codes fail to resolve directly ~25% of the time. Don't assume
+  structured input means resolved input.
+
+## Tier scoring
+
+Composite only: model signal + RxNorm score margin + NDC-in-stock +
+patient-history consistency. Thresholds come from config (Matt owns the
+numbers) — never hardcode them, they get tuned during the pilot.
+
+## Evals
+
+Score against the pharmacist-labeled gold set: per-field accuracy **and**
+confidence calibration. Feed correction data back in as it accumulates so
+calibration drift shows up during the pilot rather than after it.

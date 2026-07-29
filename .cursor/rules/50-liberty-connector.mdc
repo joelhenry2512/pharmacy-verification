@@ -1,0 +1,57 @@
+---
+description: Liberty (RxQ) connector and write-back rules (Joel's lane)
+globs: packages/liberty/**/*.ts,packages/db/**/*.ts
+alwaysApply: false
+---
+
+# Liberty (RxQ) connector
+
+The pilot pharmacy runs Liberty. It exposes a real, PIN-authenticated API
+with an existing third-party integration ecosystem (DocStation and others
+authenticate exactly this way, including historical import). We plug in the
+same way they do.
+
+## Auth
+
+A 7-digit key generated in RxQ under **System → Settings → API Keys**
+(beta builds: Settings → Utilities). It lives in `LIBERTY_API_KEY`, never in
+source, never in a log line, never in a committed fixture.
+
+## Reads
+
+Patient profiles, dispensing history, inventory. Parse every response through
+the Zod schema in `@rx/schema` at the boundary — a PMS response is untrusted
+input like any other, and silently-shaped data is how the lanes diverge.
+
+## Write-back — unresolved, handle defensively
+
+**Write scope is not yet confirmed in writing.** The public docs establish
+read access; they do not fully specify whether we can push a drafted or
+entered Rx. Until that answer exists:
+
+- Build write-back behind an interface that can degrade to a **manual-confirm
+  handoff** — we automate everything upstream and Anjali confirms inside RxQ.
+  That is still a shippable v1, not a failure mode.
+- Do not let write-back assumptions leak into the schema or the UI.
+- **Never auto-dispense.** Write-back happens only after an explicit
+  pharmacist verification action, and it writes a *drafted/verified record* —
+  it never finalizes a dispense on its own.
+
+## Portability beyond the pilot
+
+Liberty is Tier 1 (documented vendor API). The durable layer underneath is
+**NCPDP SCRIPT** (Tier 2) — any SCRIPT-capable PMS. Keep Liberty-specific
+quirks inside this package and behind the connector interface so the second
+pharmacy isn't a rewrite. Screen-driving automation is Tier 3, last resort,
+and not something to design toward.
+
+## Audit tables (`packages/db`)
+
+`CorrectionEvent` and `VerificationEvent` are **append-only**. No UPDATE, no
+DELETE, no "cleanup" migration that rewrites history. They are both the HIPAA
+compliance trail and the calibration dataset.
+
+Rich nested field envelopes are stored as `Json`; anything we filter, sort,
+or report on gets promoted to a real column. Bump `schemaVersion` on any
+breaking schema change — records already in Postgres carry their original
+version.

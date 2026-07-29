@@ -1,0 +1,64 @@
+---
+description: Verification UI — the pharmacist-facing surface (Vibhas's lane)
+globs: apps/web/**/*.ts,apps/web/**/*.tsx
+alwaysApply: false
+---
+
+# The verification surface
+
+Stages 3–4. This is the product — the screen the pilot actually lives in.
+Everything here is judged by one number: median pharmacist seconds-per-script
+at verification, against Anjali's Week-1 baseline.
+
+## Two lanes
+
+- **All-green → fast lane.** One tap to accept. **Never zero-touch** — there
+  is no code path that accepts a record without an explicit pharmacist action.
+- **Any amber or red → review lane**, sorted by severity, focus auto-landing
+  on the riskiest field rather than the top of the form.
+
+## Tier-driven UX
+
+- **Green** — pre-checked and quiet. Don't make the pharmacist confirm what
+  the system is confident about; that's the time saving.
+- **Amber** — requires explicit acknowledgment.
+- **Red** — blocks the fast path outright.
+
+Tiers arrive precomputed on the `VerificationRecord`. The UI renders them;
+it never derives or overrides them.
+
+## Side-by-side viewer
+
+Original image / PDF (pdf.js) beside the populated form, with a
+**bidirectional** bounding-box overlay: click a field → highlight its source
+region, click a region → focus its field. This is what makes correcting
+faster than retyping, which is the whole value proposition. Treat it as core,
+not polish.
+
+## Pre-checks
+
+Allergy-vs-profile, duplicate-vs-history, dose plausibility, refill-too-soon,
+out-of-stock — run against the Liberty profile before the pharmacist looks.
+
+**Additive only.** Liberty's own clinical/DUR engine remains authoritative at
+final verification. Never present a pre-check as a cleared interaction check,
+and never suppress a Liberty warning because our pre-check passed.
+
+## Correction logging
+
+Every field edit emits a `CorrectionEvent`. Append-only — never UPDATE or
+DELETE. This is simultaneously the compliance trail and Ananth's calibration
+signal, so a dropped correction is a dropped test case.
+
+## Data layer
+
+- Postgres-backed queue table, **polling via TanStack Query**. No websockets
+  until staleness is an actual observed complaint.
+- PHI-bearing reads go through the data layer, never raw SQL in a route handler.
+- Record IDs in URLs. Never a patient name, DOB, or Rx detail in a query
+  string or path param.
+
+## Metrics dashboard
+
+Seconds-per-script (headline), auto-accept rate, corrections by field, flags
+caught — each compared against the Week-1 baseline.

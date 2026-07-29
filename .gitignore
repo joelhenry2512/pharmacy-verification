@@ -4,6 +4,9 @@ dist/
 *.tsbuildinfo
 .claude/settings.local.json
 
+# Cursor local state — mcp.json commonly holds API keys
+.cursor/mcp.json
+
 # never commit — see .claude/rules/phi-safety.md
 .env
 fixtures/real/
