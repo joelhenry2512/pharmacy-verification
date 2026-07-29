@@ -8,11 +8,17 @@ set -euo pipefail
 REPO_NAME="pharmacy-verification"       # rename once the product name is locked
 VISIBILITY="private"                    # keep private — this repo touches PHI design
 
-JOEL="your-gh-handle"
-ANANTH="ananth-gh-handle"
-VIBHAS="vibhas-gh-handle"
-MATT="matt-gh-handle"                   # add as member even though he won't push
-ANJALI="anjali-gh-handle"
+# Real handles, for reference: ananth-123 (Ananth), vibhas-krishnapuram (Vibhas).
+# Left blank below until each is invited as a collaborator — GitHub rejects
+# --assignee for a non-collaborator, which would abort this script partway
+# through issue creation. Once invited, set these and re-run (mkissue is
+# idempotent-ish for labels/milestones; issues would need manual assignment
+# or a second pass).
+JOEL="joelhenry2512"
+ANANTH=""
+VIBHAS=""
+MATT=""                                 # add as member even though he won't push
+ANJALI=""
 # ───────────────────────────────────────────────────────────────────
 
 command -v gh >/dev/null || { echo "gh CLI not found: https://cli.github.com"; exit 1; }

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .turbo/
+*.tsbuildinfo
 .claude/settings.local.json
 
 # never commit — see .claude/rules/phi-safety.md
